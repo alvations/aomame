@@ -4,7 +4,7 @@ import uuid
 from aomame.exceptions import ResponseError
 
 class MicrosoftTranslator:
-    """Python SDK for 
+    """Python SDK for
     https://azure.microsoft.com/en-us/services/cognitive-services/translator/
     """
     def __init__(self, host, key):
@@ -39,7 +39,7 @@ class MicrosoftTranslator:
     def languages(self):
         """Return list of languages available for translation."""
         return {lang_code:_dict['name'] for lang_code, _dict in
-                self.get_languages().json()['translation'].items()}
+                self._get_languages().json()['translation'].items()}
 
     def scripts(self):
         """Return list of scripts available for transliteration."""
