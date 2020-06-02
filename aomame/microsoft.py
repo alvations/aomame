@@ -31,20 +31,23 @@ class MicrosoftTranslator:
         # Pre-populate the list of languages for transliteration
         self._scripts = self.scripts()
 
-    def _get_languages(self):
-        """List supported languages."""
-        response = requests.get(self.urls['languages'], headers=self.headers)
+    def api_call(self, operation, method, params=None, json=None):
+        """Wrapper class over API calls."""
+        url = self.urls[method] + params if params else self.urls[method]
+        response = operation(url, headers=self.headers, json=json)
         return response
 
     def languages(self):
         """Return list of languages available for translation."""
+        reponse_json = self.api_call(requests.get, 'languages').json()
         return {lang_code:_dict['name'] for lang_code, _dict in
-                self._get_languages().json()['translation'].items()}
+                reponse_json['translation'].items()}
 
     def scripts(self):
         """Return list of scripts available for transliteration."""
         _scripts = {}
-        for l, details in self._get_languages().json()['transliteration'].items():
+        reponse_json = self.api_call(requests.get, 'languages').json()
+        for l, details in reponse_json['transliteration'].items():
             for s in details['scripts']:
                 for _s in s['toScripts']:
                     if _s['name'] == 'Hat':
@@ -55,18 +58,10 @@ class MicrosoftTranslator:
                         _scripts[_s['code'].lower()] = _s['name']
         return _scripts
 
-    def _get_transliteration(self, text, srclang, from_script, to_script):
-        """
-        Transliterate one sentence.
-        Note the quirks: https://gist.github.com/alvations/1e2df53afff16dcc47e1e97ee9a8d9a0
-        """
-        params = f'&language={srclang}&fromScript={from_script}&toScript={to_script}'
-        response = requests.post(self.urls['transliterate'] + params,
-                                 headers=self.headers, json=[{'Text': text}])
-        return response
-
     def transliterate(self, text, srclang, from_script, to_script):
-        response = self._get_transliteration(text, srclang, from_script, to_script)
+        params = f'&language={srclang}&fromScript={from_script}&toScript={to_script}'
+        response = self.api_call(requests.post, 'transliterate',
+                                 params=params, json=[{'Text': text}])
         if response.status_code == 200:
             return response.json()[0]['text']
         else:
@@ -80,7 +75,9 @@ class MicrosoftTranslator:
         return response
 
     def translate(self, text, srclang, trglang):
-        response = self._get_translation(text, srclang, trglang)
+        params = f'&to={srclang}&to={trglang}'
+        response = self.api_call(requests.post, 'translate',
+                                 params=params, json=[{'Text': text}])
         if response.status_code == 200:
             return response.json()[0]['translations'][-1]['text']
         else:

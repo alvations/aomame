@@ -1,5 +1,4 @@
 import requests
-
 from tqdm import tqdm
 
 from aomame.exceptions import ResponseError
@@ -21,43 +20,43 @@ class SystranTranslator:
                           'translate': "translation/text/translate"}
         self.urls = {k:"https://" + self.host + '/' + v for k,v in self.endpoints.items()}
 
-    def nlp_call(self, method, text, lang=None):
+    def api_call(self, method, text, lang=None):
         query = {"input":text,"lang":lang} if lang else {"input":text}
         response = requests.get(self.urls[method],
                                 headers=self.headers,
                                 params=query)
-        return response.json()
+        return response
 
     def lemmatize(self, text, lang):
-        output = self.nlp_call('lemmatize', text, lang)
+        output = self.api_call('lemmatize', text, lang).json()
         return [(tok['text'], tok['lemma']) for tok in output['lemmas']]
 
     def langid(self, text):
-        output = self.nlp_call('langid', text)
+        output = self.api_call('langid', text).json()
         return [(l['lang'], l['confidence']) for l in output['detectedLanguages']]
 
     def ner(self, text, lang):
-        return self.nlp_call('ner_annotate', text, lang)
+        return self.api_call('ner_annotate', text, lang).json()
 
     def pos(self, text, lang):
-        output = self.nlp_call('pos', text, lang)
+        output = self.api_call('pos', text, lang).json()
         return [(token['text'], token['pos']) for token in output['partsOfSpeech']]
 
     def pos_tag(self, tokenized_text, lang):
-        output = self.nlp_call('pos',  ' '.join(tokenized_text), lang)
+        output = self.api_call('pos',  ' '.join(tokenized_text), lang).json()
         return [(token['text'], token['pos']) for token in output['partsOfSpeech']]
 
     def word_tokenize(self, text, lang):
-        output = self.nlp_call('tokenize', text, lang)
+        output = self.api_call('tokenize', text, lang).json()
         return [token['source'] for sent in output['segments'] for token in sent['tokens']
                 if token['type'] != 'separator']
 
     def sent_tokenize(self, text, lang):
-        output = self.nlp_call('tokenize', text, lang)
+        output = self.api_call('tokenize', text, lang).json()
         return [sent['source'] for sent in output['segments']]
 
     def doc_tokenize(self, text, lang):
-        output = self.nlp_call('tokenize', text, lang)
+        output = self.api_call('tokenize', text, lang).json()
         return [[token['source'] for token in sent['tokens'] if token['type'] != 'separator']
                 for sent in output['segments']]
 
