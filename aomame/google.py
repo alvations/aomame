@@ -1,6 +1,8 @@
 
 import requests
 
+from aomame.exceptions import ResponseError
+
 class GoogleTranslator:
     def __init__(self, host, key):
         # Default host: "translation.googleapis.com"
