@@ -23,6 +23,15 @@ class GoogleTranslator:
         response = operation(url, headers=self.headers, json=json)
         return response
 
+    def languages(self):
+        response = self.api_call(requests.get, 'languages')
+        return set(l['language'] for l in response.json()['data']['languages'])
+
+    def detect(self, text):
+        payload = {"q": [text]}
+        response = self.api_call(requests.post, 'detect', json=payload)
+        return response.json()['data']['detections'][0][0]['language']
+
     def translate(self, text, srclang, trglang):
         payload = {"q": [text], "target": trglang, "source": srclang, "format": "text"}
         response = self.api_call(requests.post, 'translate', json=payload)
