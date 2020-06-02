@@ -45,7 +45,7 @@ class GoogleTranslator:
         batch = []
         len_batch = 0
         for t in texts:
-            if len_batch + len(t) < 500 and len(batch) < 100:
+            if len_batch + len(t) < 5000 and len(batch) < 100:
                 batch.append(t)
                 len_batch += len(t)
             else:
