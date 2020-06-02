@@ -20,43 +20,44 @@ class SystranTranslator:
                           'translate': "translation/text/translate"}
         self.urls = {k:"https://" + self.host + '/' + v for k,v in self.endpoints.items()}
 
-    def api_call(self, method, text, lang=None):
+    def api_call(self, operation, method, text, lang=None):
+        """Wrapper class over API calls."""
         query = {"input":text,"lang":lang} if lang else {"input":text}
-        response = requests.get(self.urls[method],
+        response = operation(self.urls[method],
                                 headers=self.headers,
                                 params=query)
         return response
 
     def lemmatize(self, text, lang):
-        output = self.api_call('lemmatize', text, lang).json()
+        output = self.api_call(requests.get, 'lemmatize', text, lang).json()
         return [(tok['text'], tok['lemma']) for tok in output['lemmas']]
 
     def langid(self, text):
-        output = self.api_call('langid', text).json()
+        output = self.api_call(requests.get, 'langid', text).json()
         return [(l['lang'], l['confidence']) for l in output['detectedLanguages']]
 
     def ner(self, text, lang):
-        return self.api_call('ner_annotate', text, lang).json()
+        return self.api_call(requests.get, 'ner_annotate', text, lang).json()
 
     def pos(self, text, lang):
-        output = self.api_call('pos', text, lang).json()
+        output = self.api_call(requests.get, 'pos', text, lang).json()
         return [(token['text'], token['pos']) for token in output['partsOfSpeech']]
 
     def pos_tag(self, tokenized_text, lang):
-        output = self.api_call('pos',  ' '.join(tokenized_text), lang).json()
+        output = self.api_call(requests.get, 'pos',  ' '.join(tokenized_text), lang).json()
         return [(token['text'], token['pos']) for token in output['partsOfSpeech']]
 
     def word_tokenize(self, text, lang):
-        output = self.api_call('tokenize', text, lang).json()
+        output = self.api_call(requests.get, 'tokenize', text, lang).json()
         return [token['source'] for sent in output['segments'] for token in sent['tokens']
                 if token['type'] != 'separator']
 
     def sent_tokenize(self, text, lang):
-        output = self.api_call('tokenize', text, lang).json()
+        output = self.api_call(requests.get, 'tokenize', text, lang).json()
         return [sent['source'] for sent in output['segments']]
 
     def doc_tokenize(self, text, lang):
-        output = self.api_call('tokenize', text, lang).json()
+        output = self.api_call(requests.get, 'tokenize', text, lang).json()
         return [[token['source'] for token in sent['tokens'] if token['type'] != 'separator']
                 for sent in output['segments']]
 

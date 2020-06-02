@@ -67,13 +67,6 @@ class MicrosoftTranslator:
         else:
             raise ResponseError(response.json())
 
-    def _get_translation(self, text, srclang, trglang):
-        """Translate one sentence."""
-        params = f'&to={srclang}&to={trglang}'
-        response = requests.post(self.urls['translate'] + params,
-                                 headers=self.headers,json=[{'Text': text}])
-        return response
-
     def translate(self, text, srclang, trglang):
         params = f'&to={srclang}&to={trglang}'
         response = self.api_call(requests.post, 'translate',
