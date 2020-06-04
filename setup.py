@@ -5,7 +5,7 @@ import setuptools
 setup(
   name = 'aomame',
   packages = ['aomame'],
-  version = '0.0.6',
+  version = '0.0.7',
   description = 'Aomame',
   long_description = 'Pythonic SDK for Translation APIs',
   author = '',
