@@ -1,7 +1,9 @@
 import uuid
+from unittest.mock import Mock
 
 import requests
 from tqdm import tqdm
+from requests.models import Response
 
 from aomame.exceptions import ResponseError
 
@@ -22,7 +24,8 @@ class MicrosoftTranslator:
         self.endpoints = {
             'translate': '/translate?api-version=3.0',
             'transliterate': '/transliterate?api-version=3.0',
-            'languages': '/languages?api-version=3.0'
+            'languages': '/languages?api-version=3.0',
+            'breaksentence': 'breaksentence?api-version=3.0',
         }
         self.urls = {k:"https://" + self.host + '/' + v
                      for k,v in self.endpoints.items()}
@@ -71,47 +74,84 @@ class MicrosoftTranslator:
 
     def translate(self, text, srclang, trglang):
         params = f'&from={srclang}&to={trglang}'
-        response = self.api_call(requests.post, 'translate',
+        if len(text) < 5000:
+            response = self.api_call(requests.post, 'translate',
+                                     params=params, json=[{'Text': text}])
+            if response.status_code == 200:
+                return response.json()[0]['translations'][-1]['text']
+            else:
+                raise ResponseError(response.json())
+        else:
+            # Catch special case where len(t) >= 5000
+            # See https://docs.microsoft.com/en-us/azure/cognitive-services/translator/request-limits#character-and-array-limits-per-request
+            sentences = self.break_sent(text, srclang)
+            return ''.join(self.translate_sents(sentences, srclang, trglang, quiet=True))
+
+    def break_sent(self, text, srclang):
+        params = f'&language={srclang}'
+        response = self.api_call(requests.post, 'breaksentence',
                                  params=params, json=[{'Text': text}])
         if response.status_code == 200:
-            return response.json()[0]['translations'][-1]['text']
+            start = 0
+            sentences = []
+            for sentlen in response.json()[0]['sentLen']:
+                sentences.append(text[start:start+sentlen])
+                start += sentlen
+            return sentences
         else:
             raise ResponseError(response.json())
 
-    def _get_multiple_translations(self, texts, srclang, trglang):
+    def _mock_response_with_translation(self, translation):
+        # Create the mock request.
+        response = Mock(spec=Response)
+        response.status_code = 200
+        response.json.return_value = [{'translations': [{'text': translation}]}]
+        return response
+
+    def _get_multiple_translations(self, texts, srclang, trglang, quiet=False):
         params = f'&from={srclang}&to={trglang}'
         # Splitting texts into batches.
         # See https://docs.microsoft.com/en-us/azure/cognitive-services/translator/request-limits
         responses = []
         batch = []
         len_batch = 0
-        for t in tqdm(texts):
+        for t in tqdm(texts, disable=quiet):
             if len_batch + len(t) < 1000 and len(batch) < 10:
                 batch.append({'Text':t})
                 len_batch += len(t)
             else:
-                # Process this batch.
-                yield requests.post(self.urls['translate'] + params,
-                                    headers=self.headers,json=batch)
-                # Clear this batch, prepare the next batch.
-                batch = [{'Text':t}]
-                len_batch = len(t)
+                if batch: # Process existing batch.
+                    yield requests.post(self.urls['translate'] + params,
+                                        headers=self.headers,json=batch)
+
+                if len(t) < 5000: # Clear this batch, prepare the next batch.
+                    batch = [{'Text':t}]
+                    len_batch = len(t)
+                else:
+                    # Catch special case where len(t) >= 5000
+                    # See https://docs.microsoft.com/en-us/azure/cognitive-services/translator/request-limits#character-and-array-limits-per-request
+                    # Get the self.translate() that calls breaksentence,
+                    translation = self.translate(t, srclang, trglang)
+                    response = self._mock_response_with_translation(translation)
+                    yield response
+                    # Clear this batch, prepare the next batch.
+                    batch = []
+                    len_batch = 0
+
         # Process last batch.
         if batch:
             yield requests.post(self.urls['translate'] + params,
                                 headers=self.headers,json=batch)
 
-    def translate_sents(self, texts, srclang, trglang):
+    def translate_sents(self, texts, srclang, trglang, quiet=False):
         translations = []
-        for response in self._get_multiple_translations(texts, srclang, trglang):
+        for response in self._get_multiple_translations(texts, srclang, trglang, quiet=quiet):
             if response.status_code == 200:
                 for t in response.json():
-                    src = t['translations'][0]['text']
-                    trg = t['translations'][1]['text']
-                    translations.append((src, trg))
+                    trg = t['translations'][0]['text']
+                    translations.append(trg)
             else:
                 raise ResponseError(response.json())
-        src, trg = zip(*translations)
         # Sanity check to check that all sentences are translated.
-        assert len(trg) == len(texts)
-        return trg
+        assert len(translations) == len(texts)
+        return translations
