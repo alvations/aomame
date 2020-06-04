@@ -5,6 +5,8 @@ from aomame.exceptions import ResponseError
 
 class GoogleTranslator:
     def __init__(self, host, key):
+        """Python SDK for
+        https://cloud.google.com/translate/docs/apis"""
         # Default host: "translation.googleapis.com"
         self.host, self.key = host, key
         self.headers = {"Content-Type": "application/json; charset=utf-8"}
