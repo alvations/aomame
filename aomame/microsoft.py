@@ -70,7 +70,7 @@ class MicrosoftTranslator:
             raise ResponseError(response.json())
 
     def translate(self, text, srclang, trglang):
-        params = f'&to={srclang}&to={trglang}'
+        params = f'&from={srclang}&to={trglang}'
         response = self.api_call(requests.post, 'translate',
                                  params=params, json=[{'Text': text}])
         if response.status_code == 200:
@@ -79,7 +79,7 @@ class MicrosoftTranslator:
             raise ResponseError(response.json())
 
     def _get_multiple_translations(self, texts, srclang, trglang):
-        params = f'&to={srclang}&to={trglang}'
+        params = f'&from={srclang}&to={trglang}'
         # Splitting texts into batches.
         # See https://docs.microsoft.com/en-us/azure/cognitive-services/translator/request-limits
         responses = []
@@ -90,10 +90,6 @@ class MicrosoftTranslator:
                 batch.append({'Text':t})
                 len_batch += len(t)
             else:
-                print(len_batch)
-                print(len(batch))
-                print(batch)
-                print([len(t['Text']) for t in batch])
                 # Process this batch.
                 yield requests.post(self.urls['translate'] + params,
                                     headers=self.headers,json=batch)
