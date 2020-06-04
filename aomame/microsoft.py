@@ -1,5 +1,7 @@
-import requests
 import uuid
+
+import requests
+from tqdm import tqdm
 
 from aomame.exceptions import ResponseError
 
@@ -83,7 +85,7 @@ class MicrosoftTranslator:
         responses = []
         batch = []
         len_batch = 0
-        for t in texts:
+        for t in tqdm(texts):
             if len_batch + len(t) < 5000 and len(batch) < 100:
                 batch.append({'Text':t})
                 len_batch += len(t)
