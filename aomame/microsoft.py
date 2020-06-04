@@ -86,16 +86,20 @@ class MicrosoftTranslator:
         batch = []
         len_batch = 0
         for t in tqdm(texts):
-            if len_batch + len(t) < 4000 and len(batch) < 100:
+            if len_batch + len(t) < 1000 and len(batch) < 10:
                 batch.append({'Text':t})
                 len_batch += len(t)
             else:
+                print(len_batch)
+                print(len(batch))
+                print(batch)
+                print([len(t['Text']) for t in batch])
                 # Process this batch.
                 yield requests.post(self.urls['translate'] + params,
                                     headers=self.headers,json=batch)
                 # Clear this batch, prepare the next batch.
                 batch = [{'Text':t}]
-                len_batch = 0
+                len_batch = len(t)
         # Process last batch.
         if batch:
             yield requests.post(self.urls['translate'] + params,

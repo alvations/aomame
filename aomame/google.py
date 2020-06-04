@@ -57,7 +57,7 @@ class GoogleTranslator:
                 yield self.api_call(requests.post, 'translate', json=payload)
                 # Clear this batch, prepare the next batch.
                 batch = [t]
-                len_batch = 0
+                len_batch = len(t)
         # Process last batch.
         if batch:
             payload = {"q": batch, "target": trglang, "source": srclang, "format": "text"}
