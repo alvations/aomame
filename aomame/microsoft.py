@@ -86,7 +86,7 @@ class MicrosoftTranslator:
         batch = []
         len_batch = 0
         for t in tqdm(texts):
-            if len_batch + len(t) < 5000 and len(batch) < 100:
+            if len_batch + len(t) < 4000 and len(batch) < 100:
                 batch.append({'Text':t})
                 len_batch += len(t)
             else:
