@@ -17,4 +17,9 @@ setup(
     "Operating System :: OS Independent",
   ],
   install_requires = ['requests', 'tqdm'],
+  entry_points={
+    "console_scripts": [
+        "aomame-translate=aomame.bin.translate:main",
+        ],
+    }
 )
